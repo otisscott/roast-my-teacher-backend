@@ -37,9 +37,9 @@ function handleError(res, reason, message, code) {
   res.status(code || 500).json({"error": message});
 }
 
-/*  "/api/contacts"
- *    GET: finds all contacts
- *    POST: creates a new contact
+/*  "/api/teachers"
+ *    GET: finds all teachers
+ *    POST: creates a new teacher
  */
 
 app.get("/api/teachers", function(req, res) {
@@ -62,17 +62,17 @@ app.post("/api/teachers", function(req, res) {
 
   db.collection(TEACHERS_COLLECTION).insertOne(newTeacher, function(err, doc) {
     if (err) {
-      handleError(res, err.message, "Failed to create new contact.");
+      handleError(res, err.message, "Failed to create new teacher.");
     } else {
       res.status(201).json(doc.ops[0]);
     }
   });
 });
 
-/*  "/api/contacts/:id"
- *    GET: find contact by id
- *    PUT: update contact by id
- *    DELETE: deletes contact by id
+/*  "/api/teachers/:id"
+ *    GET: find teacher by id
+ *    PUT: update teacher by id
+ *    DELETE: deletes teacher by id
  */
 
 app.get("/api/teachers/:id", function(req, res) {
@@ -100,6 +100,46 @@ app.put("/api/teachers/:id", function(req, res) {
 });
 
 app.delete("/api/teachers/:id", function(req, res) {
+  db.collection(TEACHERS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
+    if (err) {
+      handleError(res, err.message, "Failed to delete teacher");
+    } else {
+      res.status(200).json(req.params.id);
+    }
+  });
+});
+
+/* "/api/teachers/:id/ratings"
+ *  GET: Get all reviews for a teacher
+ *  PUT: Post a review to a teacher
+ *  DELETE: Deletes teacher review by access code
+ */
+
+app.get("/api/teachers/:id", function(req, res) {
+  db.collection(TEACHERS_COLLECTION).findOne({ _id: new ObjectID(req.params.id)}, function(err, doc) {
+    if (err) {
+      handleError(res, err.message, "Failed to get teacher's reviews");
+    } else {
+      res.status(200).json(doc);
+    }
+  });
+});
+
+app.put("/api/teachers/:id", function(req, res) {
+  var updateDoc = req.body;
+  delete updateDoc._id;
+
+  db.collection(TEACHERS_COLLECTION).updateOne({ _id: new ObjectID(req.params.id) }, { $push: { reviews: { $each: [req.params.review] } } }, updateDoc, function(err, doc) {
+    if (err) {
+      handleError(res, err.message, "Failed to update teacher");
+    } else {
+      updateDoc._id = req.params.id;
+      res.status(200).json(updateDoc);
+    }
+  });
+});
+
+app.delete("/api/teachers/id/reviews", function(req, res) {
   db.collection(TEACHERS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
     if (err) {
       handleError(res, err.message, "Failed to delete teacher");
