@@ -125,7 +125,7 @@ app.get("/api/teachers/id", function(req, res) {
   });
 });
 
-app.put("/api/teachers/id", function(req, res) {
+app.put("/api/teachers/:id", function(req, res) {
   var updateDoc = req.body;
 
   db.collection(TEACHERS_COLLECTION).updateOne({ roasts: new ObjectID(req.params.roasts)}, updateDoc, function(err, doc) {
