@@ -129,17 +129,17 @@ app.put("/api/teachers/:id", function(req, res) {
   var updateDoc = req.body;
   delete updateDoc._id;
 
-  db.collection(TEACHERS_COLLECTION).updateOne({ _id: new ObjectID(req.params.id) }, { $push: { reviews: { $each: [req.params.roast] } } }, updateDoc, function(err, doc) {
+  db.collection(TEACHERS_COLLECTION).updateOne({ _id: new ObjectID(req.params.id) }, { roasts: new ObjectID(req.params.roasts)}, updateDoc, function(err, doc) {
     if (err) {
       handleError(res, err.message, "Failed to update teacher");
     } else {
-      updateDoc._id = req.params.id;
+      updateDoc._id.roasts = req.params.roasts;
       res.status(200).json(updateDoc);
     }
   });
 });
 
-app.delete("/api/teachers/id/reviews", function(req, res) {
+app.delete("/api/teachers/:id", function(req, res) {
   db.collection(TEACHERS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
     if (err) {
       handleError(res, err.message, "Failed to delete teacher");

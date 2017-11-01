@@ -1,1 +1,2 @@
-{"_id": "59f3662142c2480012d2d5f6", "roast": [ {"rating": 5, "review": "He's alright"} ] }
+
+curl -H "Content-Type: application/json" -d '{"_id": "59f3662142c2480012d2d5f6", "roast": [ {"rating": 5, "review": "He's alright"} ] }' http://your-app-name.herokuapp.com/api/contacts
