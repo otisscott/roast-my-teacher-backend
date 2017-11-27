@@ -4,7 +4,7 @@ var mongodb = require("mongodb");
 var ObjectID = mongodb.ObjectID;
 
 var TEACHERS_COLLECTION = 'teachers';
-
+var STUDENTS_COLLECTION = 'students';
 var app = express();
 app.use(bodyParser.json());
 
@@ -115,7 +115,7 @@ app.delete("/api/teachers/:id", function(req, res) {
  *  DELETE: Deletes teacher review by access code
  */
 
-app.get("/api/teachers/id", function(req, res) {
+app.get("/api/teachers/:id", function(req, res) {
   db.collection(TEACHERS_COLLECTION).findOne({ _id: new ObjectID(req.params.id)}, function(err, doc) {
     if (err) {
       handleError(res, err.message, "Failed to get teacher's reviews");
@@ -125,20 +125,10 @@ app.get("/api/teachers/id", function(req, res) {
   });
 });
 
-app.put("/api/teachers/:id", function(req, res) {
-  var updateDoc = req.body;
 
-  db.collection(TEACHERS_COLLECTION).updateOne({ roasts: new ObjectID(req.params.roasts)}, updateDoc, function(err, doc) {
-    if (err) {
-      handleError(res, err.message, "Failed to update teacher");
-    } else {
-      updateDoc.roasts += req.params.roasts;
-      res.status(200).json(updateDoc);
-    }
-  });
-});
 
-app.delete("/api/teachers/id", function(req, res) {
+
+app.delete("/api/teachers/:id", function(req, res) {
   db.collection(TEACHERS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
     if (err) {
       handleError(res, err.message, "Failed to delete teacher");
@@ -147,3 +137,30 @@ app.delete("/api/teachers/id", function(req, res) {
     }
   });
 });
+
+app.post("/api/students", function(req, res) {
+  var newStudent = req.body;
+  newStudent.createDate = new Date();
+
+  if (!req.body.name) {
+    handleError(res, "Invalid user input", "Must provide a name.", 400);
+  }
+  db.collection(STUDENTS_COLLECTION).insertOne(newStudent, function(err, doc) {
+    if (err) {
+      handleError(res, err.message, "Failed to create new student.");
+    } else {
+      res.status(201).json(doc.ops[0]);
+    }
+  });
+});
+
+app.get("/api/students/id", function(req, res){
+  var isnum = /^\d+$/.test(req.param.id.parseInt);
+  if(req.param.id.length === 7 && isnum(req.params.id) === true){
+    res.status(200).json(doc);
+  }
+  else{
+    handleError(res, err.message, "Failed to find Student's ID")
+  }
+});
+
