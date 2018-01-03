@@ -1,49 +1,39 @@
-var express = require("express");
-var bodyParser = require("body-parser");
-var mongodb = require("mongodb");
-var ObjectID = mongodb.ObjectID;
+const express = require("express");
+const bodyParser = require("body-parser");
+const mongodb = require("mongodb");
+const ObjectID = mongodb.ObjectID;
 
-var TEACHERS_COLLECTION = 'teachers';
-var STUDENTS_COLLECTION = 'students';
-var app = express();
+const TEACHERS_COLLECTION = 'teachers';
+const STUDENTS_COLLECTION = 'students';
+const ROAST_COLLECTION = 'roasts';
+const app = express();
 app.use(bodyParser.json());
 
-// Create a database variable outside of the database connection callback to reuse the connection pool in your app.
-var db;
+let db;
 
-// Connect to the database before starting the application server.
-mongodb.MongoClient.connect(process.env.MONGODB_URI, function (err, database) {
+const connectString = "mongodb://otisscott:ezpz@ds235785.mlab.com:35785/heroku_cgrr4zk9";
+
+mongodb.MongoClient.connect(connectString, (err, database) => {
   if (err) {
     console.log(err);
     process.exit(1);
   }
-
-  // Save database object from the callback for reuse.
   db = database;
   console.log("Database connection ready");
-
   // Initialize the app.
-  var server = app.listen(process.env.PORT || 8080, function () {
-    var port = server.address().port;
+  const server = app.listen(process.env.PORT || 8080, () => {
+    const port = server.address().port;
     console.log("App now running on port", port);
   });
 });
 
-// CONTACTS API ROUTES BELOW
-
-// Generic error handler used by all endpoints.
 function handleError(res, reason, message, code) {
   console.log("ERROR: " + reason);
   res.status(code || 500).json({"error": message});
 }
 
-/*  "/api/teachers"
- *    GET: finds all teachers
- *    POST: creates a new teacher
- */
-
-app.get("/api/teachers", function(req, res) {
-  db.collection(TEACHERS_COLLECTION).find({}).toArray(function(err, docs) {
+app.get("/api/teachers", (req, res) => {
+  db.collection(TEACHERS_COLLECTION).find({}).toArray((err, docs) => {
     if (err) {
       handleError(res, err.message, "Failed to get teachers.");
     } else {
@@ -52,15 +42,15 @@ app.get("/api/teachers", function(req, res) {
   });
 });
 
-app.post("/api/teachers", function(req, res) {
-  var newTeacher = req.body;
+app.post("/api/teachers", (req, res) => {
+  const newTeacher = req.body;
   newTeacher.createDate = new Date();
 
   if (!req.body.name) {
     handleError(res, "Invalid user input", "Must provide a name.", 400);
   }
 
-  db.collection(TEACHERS_COLLECTION).insertOne(newTeacher, function(err, doc) {
+  db.collection(TEACHERS_COLLECTION).insertOne(newTeacher, (err, doc) => {
     if (err) {
       handleError(res, err.message, "Failed to create new teacher.");
     } else {
@@ -69,14 +59,8 @@ app.post("/api/teachers", function(req, res) {
   });
 });
 
-/*  "/api/teachers/:id"
- *    GET: find teacher by id
- *    PUT: update teacher by id
- *    DELETE: deletes teacher by id
- */
-
-app.get("/api/teachers/:id", function(req, res) {
-  db.collection(TEACHERS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+app.get("/api/teachers/:id", (req, res) => {
+  db.collection(TEACHERS_COLLECTION).findOne({ _id: new ObjectID(req.params.id)}, (err, doc) => {
     if (err) {
       handleError(res, err.message, "Failed to get teacher");
     } else {
@@ -85,11 +69,11 @@ app.get("/api/teachers/:id", function(req, res) {
   });
 });
 
-app.put("/api/teachers/:id", function(req, res) {
-  var updateDoc = req.body;
+app.put("/api/teachers/:id", (req, res) => {
+  const updateDoc = req.body;
   delete updateDoc._id;
 
-  db.collection(TEACHERS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err, doc) {
+  db.collection(TEACHERS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, (err, doc) => {
     if (err) {
       handleError(res, err.message, "Failed to update teacher");
     } else {
@@ -99,8 +83,8 @@ app.put("/api/teachers/:id", function(req, res) {
   });
 });
 
-app.delete("/api/teachers/:id", function(req, res) {
-  db.collection(TEACHERS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
+app.delete("/api/teachers/:id", (req, res) => {
+  db.collection(TEACHERS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, (err, result) => {
     if (err) {
       handleError(res, err.message, "Failed to delete teacher");
     } else {
@@ -109,58 +93,55 @@ app.delete("/api/teachers/:id", function(req, res) {
   });
 });
 
-/* "/api/teachers/:id/ratings"
- *  GET: Get all reviews for a teacher
- *  PUT: Post a review to a teacher
- *  DELETE: Deletes teacher review by access code
- */
-
-app.get("/api/teachers/:id", function(req, res) {
-  db.collection(TEACHERS_COLLECTION).findOne({ _id: new ObjectID(req.params.id)}, function(err, doc) {
+app.get("/api/roasts", (req, res) => {
+  db.collection(ROAST_COLLECTION).find({}).toArray((err, docs) => {
     if (err) {
-      handleError(res, err.message, "Failed to get teacher's reviews");
+      handleError(res, err.message, "Failed to get roasts.");
     } else {
-      res.status(200).json(doc);
+      res.status(200).json(docs);
     }
   });
 });
 
+app.post("/api/roasts", (req, res) => {
+  const newRoast = req.body;
+  newRoast.createDate = new Date();
 
-
-
-app.delete("/api/teachers/:id", function(req, res) {
-  db.collection(TEACHERS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
+  db.collection(ROAST_COLLECTION).insertOne(newRoast, (err, doc) => {
     if (err) {
-      handleError(res, err.message, "Failed to delete teacher");
-    } else {
-      res.status(200).json(req.params.id);
-    }
-  });
-});
-
-app.post("/api/students", function(req, res) {
-  var newStudent = req.body;
-  newStudent.createDate = new Date();
-
-  if (!req.body.name) {
-    handleError(res, "Invalid user input", "Must provide a name.", 400);
-  }
-  db.collection(STUDENTS_COLLECTION).insertOne(newStudent, function(err, doc) {
-    if (err) {
-      handleError(res, err.message, "Failed to create new student.");
+      handleError(res, err.message, "Failed to create new roast.");
     } else {
       res.status(201).json(doc.ops[0]);
     }
   });
 });
 
-app.get("/api/students/id", function(req, res){
-  var isnum = /^\d+$/.test(req.param.id.parseInt);
-  if(req.param.id.length === 7 && isnum(req.params.id) === true){
-    res.status(200).json(doc);
-  }
-  else{
-    handleError(res, err.message, "Failed to find Student's ID")
-  }
+app.get("/api/roasts/:teacherid", (req, res) => {
+  console.log(req.params.teacherid);
+  db.collection(ROAST_COLLECTION).find({refer: req.params.teacherid }).toArray((err, doc) => {
+    if (err) {
+      handleError(res, err.message, "Failed to get roasts for teacher");
+    } else {
+      res.status(200).json(doc);
+    }
+  });
 });
 
+app.delete("/api/roasts/:id", (req, res) => {
+  db.collection(ROAST_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, (err, result) => {
+    if (err)
+      handleError(res, err.message, "Failed to delete roast");
+    else
+      res.status(200).json(req.params.id);
+  });
+});
+
+app.get("/api/students/:studentID", (req, res) => {
+  db.collection(STUDENTS_COLLECTION).findOne({studentID: req.params.studentID}, (err, doc) => {
+    if (err) {
+      handleError(res, err.message, "That is not a Student ID");
+    } else {
+      res.status(200).json(doc);
+    }
+  })
+});
