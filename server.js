@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongodb = require("mongodb");
+const csv = require("fast-csv");
 const ObjectID = mongodb.ObjectID;
 
 const TEACHERS_COLLECTION = 'teachers';
@@ -31,8 +32,13 @@ function handleError(res, reason, message, code) {
   console.log("ERROR: " + reason);
   res.status(code || 500).json({"error": message});
 }
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
-app.get("/api/teachers", (req, res) => {
+app.get("/api/teachers", (req, res, next) => {
   db.collection(TEACHERS_COLLECTION).find({}).toArray((err, docs) => {
     if (err) {
       handleError(res, err.message, "Failed to get teachers.");
@@ -42,7 +48,9 @@ app.get("/api/teachers", (req, res) => {
   });
 });
 
-app.post("/api/teachers", (req, res) => {
+
+
+app.post("/api/teachers", (req, res, next) => {
   const newTeacher = req.body;
   newTeacher.createDate = new Date();
 
@@ -59,7 +67,7 @@ app.post("/api/teachers", (req, res) => {
   });
 });
 
-app.get("/api/teachers/:id", (req, res) => {
+app.get("/api/teachers/:id", (req, res, next) => {
   db.collection(TEACHERS_COLLECTION).findOne({ _id: new ObjectID(req.params.id)}, (err, doc) => {
     if (err) {
       handleError(res, err.message, "Failed to get teacher");
@@ -69,7 +77,7 @@ app.get("/api/teachers/:id", (req, res) => {
   });
 });
 
-app.put("/api/teachers/:id", (req, res) => {
+app.put("/api/teachers/:id", (req, res, next) => {
   const updateDoc = req.body;
   delete updateDoc._id;
 
@@ -83,7 +91,7 @@ app.put("/api/teachers/:id", (req, res) => {
   });
 });
 
-app.delete("/api/teachers/:id", (req, res) => {
+app.delete("/api/teachers/:id", (req, res, next) => {
   db.collection(TEACHERS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, (err, result) => {
     if (err) {
       handleError(res, err.message, "Failed to delete teacher");
@@ -93,7 +101,7 @@ app.delete("/api/teachers/:id", (req, res) => {
   });
 });
 
-app.get("/api/roasts", (req, res) => {
+app.get("/api/roasts", (req, res, next) => {
   db.collection(ROAST_COLLECTION).find({}).toArray((err, docs) => {
     if (err) {
       handleError(res, err.message, "Failed to get roasts.");
@@ -103,31 +111,48 @@ app.get("/api/roasts", (req, res) => {
   });
 });
 
-app.post("/api/roasts", (req, res) => {
+app.post("/api/roasts", (req, res, next) => {
   const newRoast = req.body;
   newRoast.createDate = new Date();
+
+  if (!req.body.review) {
+    handleError(res, "Invalid user input", "Must provide a review.", 400);
+  }
+
+  if (!req.body.toast) {
+    handleError(res, "Invalid user input", "Must provide a toast.", 400);
+  }
 
   db.collection(ROAST_COLLECTION).insertOne(newRoast, (err, doc) => {
     if (err) {
       handleError(res, err.message, "Failed to create new roast.");
     } else {
-      res.status(201).json(doc.ops[0]);
+      res.status(201).json(doc);
     }
   });
 });
 
-app.get("/api/roasts/:teacherid", (req, res) => {
-  console.log(req.params.teacherid);
-  db.collection(ROAST_COLLECTION).find({refer: req.params.teacherid }).toArray((err, doc) => {
-    if (err) {
-      handleError(res, err.message, "Failed to get roasts for teacher");
-    } else {
-      res.status(200).json(doc);
-    }
-  });
+app.get("/api/roasts/:teacherid", (req, res, next) => {
+  if(req.params.teacherid.length < 7) {
+    db.collection(ROAST_COLLECTION).find({from: req.params.teacherid }).toArray((err, doc) => {
+      if (err) {
+        handleError(res, err.message, "Failed to get roasts for teacher");
+      } else {
+        res.status(200).json(doc);
+      }
+    });
+  } else {
+    db.collection(ROAST_COLLECTION).find({refer: req.params.teacherid }).toArray((err, doc) => {
+      if (err) {
+        handleError(res, err.message, "Failed to get roasts for teacher");
+      } else {
+        res.status(200).json(doc);
+      }
+    });
+  }
 });
 
-app.delete("/api/roasts/:id", (req, res) => {
+app.delete("/api/roasts/:id", (req, res, next) => {
   db.collection(ROAST_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, (err, result) => {
     if (err)
       handleError(res, err.message, "Failed to delete roast");
@@ -136,7 +161,7 @@ app.delete("/api/roasts/:id", (req, res) => {
   });
 });
 
-app.get("/api/students/:studentID", (req, res) => {
+app.get("/api/students/:studentID", (req, res, next) => {
   db.collection(STUDENTS_COLLECTION).findOne({studentID: req.params.studentID}, (err, doc) => {
     if (err) {
       handleError(res, err.message, "That is not a Student ID");
@@ -144,4 +169,24 @@ app.get("/api/students/:studentID", (req, res) => {
       res.status(200).json(doc);
     }
   })
+});
+
+app.post("/api/students", (req, res, next) => {
+  csv
+    .fromPath("my.csv")
+    .on("data", function(data){
+      sub = data[3].split(", ")
+      for(let i = 0; i < sub.length; i++) {
+        db.collection(TEACHERS_COLLECTION).insertOne({first: data[2], last: data[1], subject: sub[i]}, (err, doc) => {
+          if (err) {
+            handleError(res, err.message, "Something went wrong");
+          } else {
+            res.status(201);
+          }
+        })
+      }
+    })
+    .on("end", function(){
+      console.log("done");
+    });
 });
