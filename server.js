@@ -8,6 +8,8 @@ const TEACHERS_COLLECTION = 'teachers';
 const STUDENTS_COLLECTION = 'students';
 const ROAST_COLLECTION = 'roasts';
 const app = express();
+const Filter = require('bad-words'),
+  filter = new Filter();
 app.use(bodyParser.json());
 
 let db;
@@ -112,8 +114,9 @@ app.get("/api/roasts", (req, res, next) => {
 });
 
 app.post("/api/roasts", (req, res, next) => {
-  const newRoast = req.body;
+  let newRoast = req.body;
   newRoast.createDate = new Date();
+  newRoast = filter.clean(newRoast);
 
   if (!req.body.review) {
     handleError(res, "Invalid user input", "Must provide a review.", 400);
