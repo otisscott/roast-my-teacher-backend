@@ -8,8 +8,7 @@ const TEACHERS_COLLECTION = 'teachers';
 const STUDENTS_COLLECTION = 'students';
 const ROAST_COLLECTION = 'roasts';
 const app = express();
-const Filter = require('bad-words'),
-  filter = new Filter();
+var swearjar = require('swearjar');
 app.use(bodyParser.json());
 
 let db;
@@ -116,7 +115,7 @@ app.get("/api/roasts", (req, res, next) => {
 app.post("/api/roasts", (req, res, next) => {
   let newRoast = req.body;
   newRoast.createDate = new Date();
-  newRoast = filter.clean(newRoast);
+  newRoast.toast = swearjar.censor(newRoast.toast);
 
   if (!req.body.review) {
     handleError(res, "Invalid user input", "Must provide a review.", 400);
