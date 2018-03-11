@@ -55,8 +55,8 @@ app.post("/api/teachers", (req, res, next) => {
   const newTeacher = req.body;
   newTeacher.createDate = new Date();
 
-  if (!req.body.name) {
-    handleError(res, "Invalid user input", "Must provide a name.", 400);
+  if (!req.body.first || !req.body.last || !req.body.subject) {
+    handleError(res, "Invalid user input", "Must provide a name and subject.", 400);
   }
 
   db.collection(TEACHERS_COLLECTION).insertOne(newTeacher, (err, doc) => {
