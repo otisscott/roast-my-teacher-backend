@@ -111,15 +111,7 @@ app.get("/api/roasts", (req, res, next) => {
 app.post("/api/roasts", (req, res, next) => {
   let newRoast = req.body;
   newRoast.createDate = new Date();
-  newRoast.toast = swearjar.censor(newRoast.toast);
-
-  if (!req.body.review) {
-    handleError(res, "Invalid user input", "Must provide a review.", 400);
-  }
-
-  if (!req.body.toast) {
-    handleError(res, "Invalid user input", "Must provide a toast.", 400);
-  }
+  newRoast = filter.clean(newRoast);
 
   db.collection(ROAST_COLLECTION).insertOne(newRoast, (err, doc) => {
     if (err) {
