@@ -8,8 +8,7 @@ const TEACHERS_COLLECTION = 'teachers';
 const STUDENTS_COLLECTION = 'students';
 const ROAST_COLLECTION = 'roasts';
 const app = express();
-const Filter = require('bad-words'),
-  filter = new Filter();
+const swearjar = require('swearjar');
 app.use(bodyParser.json());
 
 let db;
@@ -117,7 +116,7 @@ app.get("/api/roasts", (req, res, next) => {
 app.post("/api/roasts", (req, res, next) => {
   let newRoast = req.body;
   newRoast.createDate = new Date();
-  newRoast = swearjar.censor(newRoast);
+  newRoast.toast = swearjar.censor(newRoast.toast);
 
   db.collection(ROAST_COLLECTION).insertOne(newRoast, (err, doc) => {
     if (err) {
