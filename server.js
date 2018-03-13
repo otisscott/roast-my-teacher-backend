@@ -8,7 +8,8 @@ const TEACHERS_COLLECTION = 'teachers';
 const STUDENTS_COLLECTION = 'students';
 const ROAST_COLLECTION = 'roasts';
 const app = express();
-var swearjar = require('swearjar');
+const Filter = require('bad-words'),
+  filter = new Filter();
 app.use(bodyParser.json());
 
 let db;
@@ -35,6 +36,7 @@ function handleError(res, reason, message, code) {
 }
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
 });
@@ -54,6 +56,10 @@ app.get("/api/teachers", (req, res, next) => {
 app.post("/api/teachers", (req, res, next) => {
   const newTeacher = req.body;
   newTeacher.createDate = new Date();
+
+  if (!req.body.name) {
+    handleError(res, "Invalid user input", "Must provide a name.", 400);
+  }
 
   db.collection(TEACHERS_COLLECTION).insertOne(newTeacher, (err, doc) => {
     if (err) {
@@ -111,8 +117,7 @@ app.get("/api/roasts", (req, res, next) => {
 app.post("/api/roasts", (req, res, next) => {
   let newRoast = req.body;
   newRoast.createDate = new Date();
-  newRoast.toast = swearjar.censor(newRoast.toast);
-  console.log(newRoast)
+  newRoast = swearjar.censor(newRoast);
 
   db.collection(ROAST_COLLECTION).insertOne(newRoast, (err, doc) => {
     if (err) {
