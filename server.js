@@ -111,7 +111,8 @@ app.get("/api/roasts", (req, res, next) => {
 app.post("/api/roasts", (req, res, next) => {
   let newRoast = req.body;
   newRoast.createDate = new Date();
-  newRoast = swearjar.censor(newRoast);
+  newRoast.toast = swearjar.censor(newRoast.toast);
+  console.log(newRoast)
 
   db.collection(ROAST_COLLECTION).insertOne(newRoast, (err, doc) => {
     if (err) {
